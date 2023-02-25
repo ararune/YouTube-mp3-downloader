@@ -2,15 +2,17 @@ import os
 import pytube
 import PySimpleGUI as sg
 import ffmpeg
+from pathlib import Path
+import subprocess
 
 DOWNLOAD_DIR_FILE = "download_dir.txt"
 
 def get_download_dir():
-    if not os.path.isfile(DOWNLOAD_DIR_FILE):
-        with open(DOWNLOAD_DIR_FILE, "w") as f:
-            f.write(os.path.join(os.path.expanduser("~"), "Downloads"))
-    with open(DOWNLOAD_DIR_FILE, "r") as f:
-        return f.read().strip()
+    download_dir = os.path.join(Path.home(), "Downloads")
+    if not os.path.isdir(download_dir):
+        # Downloads folder does not exist or is not a directory
+        download_dir = os.getcwd()
+    return download_dir
 
 def set_download_dir(download_dir):
     with open(DOWNLOAD_DIR_FILE, "w") as f:
@@ -27,12 +29,15 @@ def download_video(url, download_dir):
     audio_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
     if 'bit_rate' not in audio_stream:
         # Add bit rate of 128 kbps to audio file
-        (
-            ffmpeg.input(audio_path)
-            .output(output_path, audio_bitrate='128k')
-            .overwrite_output()
-            .run()
-        )
+        cmd = [
+            'ffmpeg',
+            '-y',
+            '-i', audio_path,
+            '-b:a', '128k',
+            '-vn',
+            output_path
+        ]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         os.remove(audio_path)
     else:
         # Rename audio file to output file
@@ -40,10 +45,10 @@ def download_video(url, download_dir):
 
     return output_path
 
-sg.theme('DarkTeal12')
 
-layout = [
-    [sg.Text('YouTube MP3 Downloader', font=('Arial', 20, 'bold'))],
+sg.theme('LightGray1')
+
+layout = [    [sg.Text('YouTube MP3 Downloader', font=('Arial', 20, 'bold'))],
     [sg.Text('Enter YouTube URL:', font=('Arial', 12)), sg.InputText(key='url', size=(30, 1), font=('Arial', 12))],
     [sg.Text('Download Destination:', font=('Arial', 12)), sg.InputText(get_download_dir(), key='download_dir', size=(30, 1), font=('Arial', 12)), sg.FolderBrowse(button_text='Browse', font=('Arial', 12))],
     [sg.Button('Download', size=(10, 1), font=('Arial', 12)), sg.Button('Exit', size=(10, 1), font=('Arial', 12))],
