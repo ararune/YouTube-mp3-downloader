@@ -9,18 +9,12 @@ import ffmpeg
 from pathlib import Path
 import subprocess
 
-DOWNLOAD_DIR_FILE = "download_dir.txt"
-
 def get_download_dir():
     download_dir = os.path.join(Path.home(), "Downloads")
     if not os.path.isdir(download_dir):
         # Downloads folder does not exist or is not a directory
         download_dir = os.getcwd()
     return download_dir
-
-def set_download_dir(download_dir):
-    with open(DOWNLOAD_DIR_FILE, "w") as f:
-        f.write(download_dir)
 
 def download_video(url, download_dir):
     youtube = pytube.YouTube(url)
@@ -70,10 +64,10 @@ while True:
         try:
             download_video(url, download_dir)
             sg.popup('Download Complete!', f'The file has been saved in {download_dir}', font=('Arial', 12))
-            set_download_dir(download_dir)
             window['status'].update('')
         except Exception as e:
             window['status'].update(str(e))
 
 window.close()
+
 ```
